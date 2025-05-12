@@ -5850,6 +5850,24 @@ XXH_mult32to64_add64(xxh_u64 lhs, xxh_u64 rhs, xxh_u64 acc)
     __asm__("umaddl %x0, %w1, %w2, %x3" : "=r" (ret) : "r" (lhs), "r" (rhs), "r" (acc));
     return ret;
 }
+#elif defined(__riscv) && (__riscv_xlen == 64)
+XXH_FORCE_INLINE xxh_u64
+XXH_mult32to64_add64(xxh_u64 lhs, xxh_u64 rhs, xxh_u64 acc)
+{
+    xxh_u64 ret;
+    __asm__ (
+        "slli  t0, %1, 32    \n\t"  // extract low 32 bits of lhs
+        "srli  t0, t0, 32    \n\t"
+        "slli  t1, %2, 32    \n\t"  // extract low 32 bits of rhs
+        "srli  t1, t1, 32    \n\t"
+        "mul   t0, t0, t1    \n\t"  // multiply
+        "add   %0, t0, %3    \n\t"  // add acc
+        : "=&r" (ret)              // <-- early-clobber (&) prevents aliasing!
+        : "r" (lhs), "r" (rhs), "r" (acc)
+        : "t0", "t1"
+    );
+    return ret;
+}
 #else
 XXH_FORCE_INLINE xxh_u64
 XXH_mult32to64_add64(xxh_u64 lhs, xxh_u64 rhs, xxh_u64 acc)
