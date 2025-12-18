@@ -5989,7 +5989,17 @@ XXH_mult32to64_add64(xxh_u64 lhs, xxh_u64 rhs, xxh_u64 acc)
     __asm__("umaddl %x0, %w1, %w2, %x3" : "=r" (ret) : "r" (lhs), "r" (rhs), "r" (acc));
     return ret;
 }
-#elif defined(__riscv) && (__riscv_xlen == 64)
+#elif defined(__riscv) && (__riscv_xlen == 64) && defined(__GNUC__) && (__GNUC__ < 14)
+/*
+ * RISC-V optimization for XXH_mult32to64_add64 using inline assembly.
+ *
+ * This optimization uses slli/srli to mask inputs to 32 bits, followed by mul and add.
+ * It uses fewer temporary registers compared to older GCC versions (<= 13), which
+ * generate code using a mask constant and additional register.
+ *
+ * Modern GCC (>= 14) already generates similar code, so this optimization is only
+ * enabled for older GCC versions to avoid interfering with compiler optimizations.
+ */
 XXH_FORCE_INLINE xxh_u64
 XXH_mult32to64_add64(xxh_u64 lhs, xxh_u64 rhs, xxh_u64 acc)
 {
