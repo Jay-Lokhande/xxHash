@@ -59,6 +59,11 @@ detect_x86_arch = $(shell $(CC) -dumpmachine | grep -E 'i[3-6]86|x86_64')
 ifneq ($(strip $(call detect_x86_arch)),)
     #note: can be overridden at compile time, by setting DISPATCH=0
     DISPATCH ?= 1
+else
+    ifeq ($(DISPATCH),1)
+        $(info "Note: DISPATCH=1 is only supported on x86/x64 targets")
+    endif
+    override DISPATCH := 0
 endif
 
 ifeq ($(NODE_JS),1)
@@ -523,7 +528,7 @@ listL120:  # extract lines >= 120 characters in *.{c,h}, by Takayuki Matsuoka (n
 
 .PHONY: trailingWhitespace
 trailingWhitespace:
-	! $(GREP) -E "`printf '[ \\t]$$'`" cli/*.c cli/*.h cli/*.1 *.c *.h LICENSE Makefile build/cmake/CMakeLists.txt
+	@$(GREP) -n -E "`printf '[ \\t]$$'`" cli/*.c cli/*.h cli/*.1 *.c *.h LICENSE Makefile build/cmake/CMakeLists.txt && { echo "Error: trailing whitespace detected"; exit 1; } || true
 
 .PHONY: lint-unicode
 lint-unicode:
